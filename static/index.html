@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HearMe - Mental Wellness AI Companion</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --primary: #2d5d7b;
+            --primary-light: #4a8fb5;
+            --accent: #84b59f;
+            --accent-bright: #a8d5ba;
+            --earth: #c89b7c;
+            --bg-main: #faf8f5;
+            --bg-card: #ffffff;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --shadow: rgba(45, 93, 123, 0.08);
+            --success: #10b981;
+            --error: #ef4444;
+        }
+
+        [data-theme="dark"] {
+            --primary: #4a8fb5;
+            --primary-light: #6ba5c5;
+            --accent: #a8d5ba;
+            --bg-main: #1a1a1a;
+            --bg-card: #2d2d2d;
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --shadow: rgba(0, 0, 0, 0.3);
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg-main);
+            color: var(--text-primary);
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        .theme-toggle {
+            position: fixed; top: 1.5rem; right: 1.5rem;
+            width: 46px; height: 46px; border-radius: 50%;
+            background: var(--primary); color: white;
+            border: none; cursor: pointer; font-size: 1.3rem;
+            box-shadow: 0 4px 15px var(--shadow); z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover { transform: scale(1.1) rotate(20deg); }
+
+        .user-profile {
+            position: fixed; top: 1.5rem; left: 1.5rem;
+            display: none; align-items: center; gap: 0.75rem;
+            background: var(--bg-card); padding: 0.6rem 1.2rem;
+            border-radius: 50px; box-shadow: 0 2px 10px var(--shadow); z-index: 1000;
+        }
+
+        .user-avatar {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: 700; font-size: 0.9rem;
+        }
+
+        .user-name { font-weight: 600; font-size: 0.95rem; }
+
+        .logout-btn {
+            padding: 0.4rem 0.85rem; background: transparent;
+            border: 2px solid var(--error); color: var(--error);
+            border-radius: 8px; cursor: pointer; font-weight: 500;
+            font-size: 0.85rem; transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover { background: var(--error); color: white; }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 7rem 2rem 2rem; }
+
+        header { text-align: center; margin-bottom: 2.5rem; }
+
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.8rem; color: var(--primary); margin-bottom: 0.4rem;
+        }
+
+        .subtitle { font-size: 1.15rem; color: var(--text-secondary); }
+
+        .tabs {
+            display: flex; gap: 0.75rem; flex-wrap: wrap;
+            justify-content: center; margin-bottom: 2rem;
+            border-bottom: 2px solid rgba(45,93,123,0.1);
+            padding-bottom: 1rem;
+        }
+
+        .tab {
+            padding: 0.7rem 1.4rem; border: none; background: none;
+            cursor: pointer; font-size: 0.95rem; font-weight: 600;
+            color: var(--text-secondary); transition: all 0.3s ease;
+            border-radius: 10px;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white; box-shadow: 0 4px 15px rgba(45,93,123,0.3);
+        }
+
+        .section { display: none; animation: fadeIn 0.4s ease; }
+        .section.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: var(--bg-card); border-radius: 18px;
+            padding: 1.75rem; box-shadow: 0 4px 20px var(--shadow);
+            margin-bottom: 1.75rem;
+        }
+
+        .section-title {
+            font-family: 'Playfair Display', serif;
+            color: var(--primary); margin-bottom: 0.75rem;
+            font-size: 1.4rem;
+        }
+
+        .section-subtitle { color: var(--text-secondary); margin-bottom: 1.25rem; }
+
+        textarea {
+            width: 100%; min-height: 140px; padding: 1rem;
+            border: 2px solid rgba(45,93,123,0.2); border-radius: 12px;
+            font-family: 'DM Sans', sans-serif; font-size: 1rem;
+            resize: vertical; background: var(--bg-main); color: var(--text-primary);
+            transition: border-color 0.3s ease;
+        }
+
+        textarea:focus {
+            outline: none; border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(74,143,181,0.1);
+        }
+
+        button {
+            padding: 0.8rem 1.8rem;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white; border: none; border-radius: 12px;
+            font-size: 0.95rem; font-weight: 600; cursor: pointer;
+            transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(45,93,123,0.3);
+            margin-top: 1rem;
+        }
+
+        button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(45,93,123,0.4); }
+        button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        .entry {
+            background: var(--bg-main); border-left: 4px solid var(--primary);
+            padding: 1.25rem; margin-bottom: 1.25rem; border-radius: 10px;
+            transition: box-shadow 0.2s ease;
+        }
+
+        .entry:hover { box-shadow: 0 2px 12px var(--shadow); }
+
+        .mood-indicator {
+            display: inline-block; padding: 0.35rem 0.9rem;
+            border-radius: 20px; font-size: 0.85rem; font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Chat */
+        .chat-container {
+            background: var(--bg-card); border-radius: 18px;
+            box-shadow: 0 4px 20px var(--shadow);
+            display: flex; flex-direction: column;
+            height: 540px; max-width: 880px; margin: 0 auto;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            padding: 1.3rem 1.5rem; border-radius: 18px 18px 0 0; color: white;
+        }
+
+        .chat-messages {
+            flex: 1; overflow-y: auto; padding: 1.25rem;
+            background: var(--bg-main);
+        }
+
+        .chat-messages::-webkit-scrollbar { width: 6px; }
+        .chat-messages::-webkit-scrollbar-track { background: transparent; }
+        .chat-messages::-webkit-scrollbar-thumb { background: rgba(45,93,123,0.2); border-radius: 3px; }
+
+        .message {
+            margin-bottom: 1.25rem; display: flex; gap: 0.75rem;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user { flex-direction: row-reverse; }
+
+        .message-avatar {
+            width: 38px; height: 38px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; flex-shrink: 0;
+        }
+
+        .message.user .message-avatar {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        }
+
+        .message.bot .message-avatar {
+            background: linear-gradient(135deg, var(--accent), var(--accent-bright));
+        }
+
+        .message-content {
+            max-width: 72%; background: white; padding: 0.9rem 1.1rem;
+            border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            line-height: 1.6; color: var(--text-primary); font-size: 0.95rem;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+        }
+
+        .chat-input-container {
+            padding: 1.25rem; background: var(--bg-card);
+            border-radius: 0 0 18px 18px;
+            border-top: 1px solid rgba(45,93,123,0.08);
+        }
+
+        .chat-input-wrapper { display: flex; gap: 0.75rem; }
+
+        .chat-input {
+            flex: 1; padding: 0.75rem 1.1rem;
+            border: 2px solid rgba(45,93,123,0.1); border-radius: 50px;
+            font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
+            transition: all 0.3s ease; background: var(--bg-main); color: var(--text-primary);
+        }
+
+        .chat-input:focus {
+            outline: none; border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(74,143,181,0.1);
+        }
+
+        .chat-input + button { margin-top: 0; border-radius: 50px; padding: 0.75rem 1.5rem; }
+
+        /* Goals */
+        .goal-item {
+            background: var(--bg-main); padding: 1.25rem;
+            border-radius: 14px; margin-bottom: 1rem;
+            transition: box-shadow 0.2s ease;
+        }
+
+        .goal-item:hover { box-shadow: 0 2px 12px var(--shadow); }
+
+        .progress-bar-bg {
+            height: 10px; background: var(--bg-card); border-radius: 5px; overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%; border-radius: 5px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            transition: width 0.6s ease;
+        }
+
+        /* Recommendations */
+        .recommendation-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.25rem; margin-top: 1.5rem;
+        }
+
+        .recommendation-card {
+            background: var(--bg-card); padding: 1.5rem; border-radius: 14px;
+            text-align: center; transition: all 0.3s ease;
+            box-shadow: 0 2px 10px var(--shadow);
+        }
+
+        .recommendation-card:hover { transform: translateY(-5px); box-shadow: 0 6px 20px var(--shadow); }
+
+        /* Stats grid */
+        .stats-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .stat-card {
+            text-align: center; padding: 1.5rem;
+            background: var(--bg-main); border-radius: 14px;
+        }
+
+        .stat-number {
+            font-size: 2rem; font-weight: 700; color: var(--primary);
+            font-family: 'Playfair Display', serif;
+        }
+
+        .stat-label { font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.4rem; }
+
+        /* Toast notification */
+        .toast {
+            position: fixed; bottom: 2rem; right: 2rem;
+            background: var(--bg-card); color: var(--text-primary);
+            padding: 1rem 1.5rem; border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            font-weight: 500; z-index: 9999;
+            animation: slideUp 0.3s ease;
+            max-width: 300px;
+        }
+
+        .toast.success { border-left: 4px solid var(--success); }
+        .toast.error { border-left: 4px solid var(--error); }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%; background: rgba(0,0,0,0.5);
+            z-index: 2000; align-items: center; justify-content: center;
+        }
+
+        .modal-overlay.open { display: flex; }
+
+        .modal {
+            background: var(--bg-card); border-radius: 18px;
+            padding: 2rem; max-width: 500px; width: 90%;
+            max-height: 90vh; overflow-y: auto;
+        }
+
+        .form-field { margin-bottom: 1rem; }
+        .form-field label { display: block; margin-bottom: 0.4rem; font-weight: 600; font-size: 0.9rem; }
+
+        .form-field input, .form-field select, .form-field textarea {
+            width: 100%; padding: 0.7rem 0.9rem;
+            border: 2px solid rgba(45,93,123,0.15); border-radius: 10px;
+            font-size: 0.95rem; font-family: 'DM Sans', sans-serif;
+            background: var(--bg-main); color: var(--text-primary);
+            transition: border-color 0.3s ease;
+        }
+
+        .form-field input:focus, .form-field select:focus {
+            outline: none; border-color: var(--primary-light);
+        }
+
+        @media (max-width: 768px) {
+            .container { padding: 6rem 1rem 1rem; }
+            h1 { font-size: 2rem; }
+            .theme-toggle, .user-profile { top: 1rem; }
+            .user-profile { left: 1rem; padding: 0.5rem 1rem; }
+            .user-name { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" onclick="toggleDarkMode()" id="theme-toggle" aria-label="Toggle dark mode">🌙</button>
+
+    <div class="user-profile" id="user-profile">
+        <div class="user-avatar" id="user-avatar">U</div>
+        <span class="user-name" id="user-name">User</span>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>🎧 HearMe</h1>
+            <p class="subtitle">Your Mental Wellness AI Companion</p>
+        </header>
+
+        <div class="tabs" role="tablist">
+            <button class="tab active" onclick="switchTab('journal', this)" role="tab">📝 Journal</button>
+            <button class="tab" onclick="switchTab('mood', this)" role="tab">📊 Mood</button>
+            <button class="tab" onclick="switchTab('goals', this)" role="tab">🎯 Goals</button>
+            <button class="tab" onclick="switchTab('music', this)" role="tab">🎵 Music</button>
+            <button class="tab" onclick="switchTab('videos', this)" role="tab">🎬 Videos</button>
+            <button class="tab" onclick="switchTab('chatbot', this)" role="tab">💬 AI Chat</button>
+        </div>
+
+        <!-- Journal Section -->
+        <div id="journal" class="section active" role="tabpanel">
+            <div class="card">
+                <h2 class="section-title">How are you feeling today?</h2>
+                <p class="section-subtitle">Share your thoughts and feelings. Your entries are analyzed to understand emotional patterns.</p>
+                <textarea id="journalText" placeholder="Dear Journal, today I feel..." maxlength="10000"></textarea>
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+                    <button onclick="saveJournalEntry()" id="saveButton">💾 Save & Analyze</button>
+                    <small id="charCount" style="color:var(--text-secondary);">0 / 10,000</small>
+                </div>
+                <div id="sentimentResult"></div>
+            </div>
+
+            <div style="display:flex; gap:0.75rem; margin-bottom:1.5rem; align-items:center; flex-wrap:wrap;">
+                <input type="text" id="searchInput" placeholder="🔍 Search journal entries..."
+                    style="flex:1; padding:0.7rem 1rem; border:2px solid rgba(45,93,123,0.15); border-radius:12px;
+                    font-family:'DM Sans',sans-serif; background:var(--bg-card); color:var(--text-primary); min-width:180px;"
+                    oninput="debounceSearch(this.value)">
+            </div>
+
+            <h2 class="section-title">Your Journal Entries</h2>
+            <div id="journalEntries"></div>
+        </div>
+
+        <!-- Mood Section -->
+        <div id="mood" class="section" role="tabpanel">
+            <div class="card">
+                <h2 class="section-title">📊 Mood Analytics</h2>
+                <div id="moodStats"></div>
+            </div>
+            <div class="card">
+                <h2 class="section-title">Mood Timeline</h2>
+                <div id="moodTimeline"></div>
+            </div>
+        </div>
+
+        <!-- Goals Section -->
+        <div id="goals" class="section" role="tabpanel">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                    <h2 class="section-title" style="margin:0;">🎯 Your Wellness Goals</h2>
+                    <button onclick="showGoalModal()" style="margin:0;">+ New Goal</button>
+                </div>
+                <div id="goalsList"></div>
+            </div>
+        </div>
+
+        <!-- Music Section -->
+        <div id="music" class="section" role="tabpanel">
+            <div class="card">
+                <h2 class="section-title">🎵 Music Therapy</h2>
+                <p class="section-subtitle">Curated playlists based on your current mood.</p>
+            </div>
+            <div id="musicRecommendations" class="recommendation-grid"></div>
+        </div>
+
+        <!-- Videos Section -->
+        <div id="videos" class="section" role="tabpanel">
+            <div class="card">
+                <h2 class="section-title">🎬 Wellness Videos</h2>
+                <p class="section-subtitle">Meditation and relaxation content for your mood.</p>
+            </div>
+            <div id="videoRecommendations" class="recommendation-grid"></div>
+        </div>
+
+        <!-- Chatbot Section -->
+        <div id="chatbot" class="section" role="tabpanel">
+            <div class="chat-container">
+                <div class="chat-header">
+                    <h2 style="margin:0; font-family:'Playfair Display',serif; font-size:1.3rem;">💬 HearMe AI Assistant</h2>
+                    <p style="margin:0.4rem 0 0 0; opacity:0.9; font-size:0.85rem;">Your compassionate wellness companion</p>
+                </div>
+                <div class="chat-messages" id="chatMessages">
+                    <div style="text-align:center; color:var(--text-secondary); padding:2rem;">
+                        👋 Hello! I'm HearMe. How are you feeling today?
+                    </div>
+                </div>
+                <div class="chat-input-container">
+                    <div class="chat-input-wrapper">
+                        <input type="text" id="chatInput" class="chat-input"
+                            placeholder="Type your message..."
+                            onkeypress="handleChatKeyPress(event)"
+                            maxlength="2000" aria-label="Chat message">
+                        <button onclick="sendMessage()" id="sendBtn">Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Goal Modal -->
+    <div id="goalModal" class="modal-overlay" role="dialog" aria-modal="true">
+        <div class="modal">
+            <h2 class="section-title">Create New Goal</h2>
+            <form onsubmit="createGoal(event)" novalidate>
+                <div class="form-field">
+                    <label for="goalTitle">Goal Title *</label>
+                    <input type="text" id="goalTitle" required placeholder="e.g., Meditate daily">
+                </div>
+                <div class="form-field">
+                    <label for="goalDesc">Description</label>
+                    <textarea id="goalDesc" rows="2" style="min-height:auto;" placeholder="Optional details..."></textarea>
+                </div>
+                <div class="form-field">
+                    <label for="goalCategory">Category *</label>
+                    <select id="goalCategory" required>
+                        <option value="mindfulness">🧘 Mindfulness</option>
+                        <option value="exercise">🏃 Exercise</option>
+                        <option value="sleep">🌙 Sleep</option>
+                        <option value="social">🤝 Social</option>
+                        <option value="nutrition">🥗 Nutrition</option>
+                        <option value="creativity">🎨 Creativity</option>
+                    </select>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+                    <div class="form-field">
+                        <label for="goalTarget">Target Value *</label>
+                        <input type="number" id="goalTarget" required min="1" placeholder="e.g., 30">
+                    </div>
+                    <div class="form-field">
+                        <label for="goalUnit">Unit *</label>
+                        <input type="text" id="goalUnit" required placeholder="days, times, mins">
+                    </div>
+                </div>
+                <div class="form-field">
+                    <label for="goalDeadline">Deadline (optional)</label>
+                    <input type="date" id="goalDeadline">
+                </div>
+                <div style="display:flex; gap:0.75rem; margin-top:1rem;">
+                    <button type="submit" style="flex:1; margin:0;">Create Goal</button>
+                    <button type="button" onclick="hideGoalModal()" style="flex:1; margin:0; background:#6b7280;">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '/api';
+        let currentMood = 'neutral';
+        let searchTimer = null;
+
+        // ==================== AUTH ====================
+
+        async function checkAuth() {
+            try {
+                const res = await fetch(`${API_URL}/auth/user`, { credentials: 'include' });
+                if (!res.ok) { window.location.href = '/login.html'; return false; }
+                const user = await res.json();
+                document.getElementById('user-profile').style.display = 'flex';
+                document.getElementById('user-name').textContent = user.username;
+                document.getElementById('user-avatar').textContent = user.username[0].toUpperCase();
+                applyTheme(user.theme || localStorage.getItem('hearme-theme') || 'light');
+                return true;
+            } catch {
+                window.location.href = '/login.html';
+                return false;
+            }
+        }
+
+        async function logout() {
+            try {
+                await fetch(`${API_URL}/auth/logout`, { method: 'POST', credentials: 'include' });
+            } finally {
+                window.location.href = '/login.html';
+            }
+        }
+
+        // ==================== THEME ====================
+
+        function toggleDarkMode() {
+            const current = document.documentElement.getAttribute('data-theme') || 'light';
+            const newTheme = current === 'light' ? 'dark' : 'light';
+            applyTheme(newTheme);
+            localStorage.setItem('hearme-theme', newTheme);
+            fetch(`${API_URL}/settings/theme`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                credentials: 'include', body: JSON.stringify({ theme: newTheme })
+            }).catch(() => {});
+        }
+
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            document.getElementById('theme-toggle').textContent = theme === 'light' ? '🌙' : '☀️';
+        }
+
+        // ==================== TABS ====================
+
+        function switchTab(tabName, btnEl) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            btnEl.classList.add('active');
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+
+            const loaders = { mood: loadMoodData, music: loadMusicRecommendations, videos: loadVideoRecommendations, goals: loadGoals };
+            if (loaders[tabName]) loaders[tabName]();
+        }
+
+        // ==================== TOAST ====================
+
+        function showToast(message, type = 'success') {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3500);
+        }
+
+        // ==================== JOURNAL ====================
+
+        // Character counter
+        document.addEventListener('DOMContentLoaded', () => {
+            const textarea = document.getElementById('journalText');
+            const counter = document.getElementById('charCount');
+            textarea.addEventListener('input', () => {
+                counter.textContent = `${textarea.value.length.toLocaleString()} / 10,000`;
+            });
+        });
+
+        async function saveJournalEntry() {
+            const text = document.getElementById('journalText').value.trim();
+            if (!text) { showToast('Please write something first.', 'error'); return; }
+
+            const btn = document.getElementById('saveButton');
+            btn.disabled = true;
+            btn.textContent = '⏳ Analyzing...';
+
+            try {
+                const res = await fetch(`${API_URL}/journal/add`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ text })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    currentMood = data.sentiment.mood;
+                    document.getElementById('journalText').value = '';
+                    document.getElementById('charCount').textContent = '0 / 10,000';
+
+                    const color = getMoodColor(data.sentiment.mood);
+                    const moodLabel = data.sentiment.mood.replace('_', ' ').toUpperCase();
+                    document.getElementById('sentimentResult').innerHTML = `
+                        <div style="margin-top:1.25rem; padding:1.25rem; background:var(--bg-main); border-radius:12px; border-left:4px solid ${color};">
+                            <div class="mood-indicator" style="background:${color}; color:white;">${moodLabel}</div>
+                            <p style="margin-top:0.75rem; font-size:0.9rem; color:var(--text-secondary);">
+                                Sentiment score: <strong style="color:var(--text-primary);">${data.sentiment.polarity}</strong> &nbsp;|&nbsp;
+                                Subjectivity: <strong style="color:var(--text-primary);">${data.sentiment.subjectivity}</strong>
+                            </p>
+                            ${data.emotions.positive.length ? `<p style="margin-top:0.5rem; font-size:0.85rem;">✨ Positive emotions: ${data.emotions.positive.join(', ')}</p>` : ''}
+                            ${data.emotions.negative.length ? `<p style="margin-top:0.25rem; font-size:0.85rem; color:var(--text-secondary);">⚠️ Detected: ${data.emotions.negative.join(', ')}</p>` : ''}
+                        </div>`;
+                    loadJournalEntries();
+                    showToast('Entry saved successfully!');
+                } else {
+                    showToast(data.error || 'Error saving entry', 'error');
+                }
+            } catch {
+                showToast('Connection error. Check server is running.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '💾 Save & Analyze';
+            }
+        }
+
+        async function loadJournalEntries(query = '') {
+            try {
+                const url = query
+                    ? `${API_URL}/journal/search?q=${encodeURIComponent(query)}`
+                    : `${API_URL}/journal/entries`;
+                const res = await fetch(url, { credentials: 'include' });
+                if (!res.ok) return;
+
+                const entries = await res.json();
+                const container = document.getElementById('journalEntries');
+
+                if (entries.length === 0) {
+                    container.innerHTML = `<p style="text-align:center; color:var(--text-secondary); padding:2rem;">
+                        ${query ? 'No entries match your search.' : 'No journal entries yet. Start writing!'}</p>`;
+                    return;
+                }
+
+                container.innerHTML = entries.map(entry => {
+                    const color = entry.sentiment.color;
+                    const moodLabel = entry.sentiment.mood.replace('_', ' ').toUpperCase();
+                    const date = new Date(entry.created_at).toLocaleString();
+                    const preview = entry.text.length > 200 ? entry.text.slice(0, 200) + '...' : entry.text;
+                    return `
+                        <div class="entry" style="border-left-color:${color};">
+                            <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:0.5rem; flex-wrap:wrap; gap:0.5rem;">
+                                <div class="mood-indicator" style="background:${color}; color:white;">${moodLabel}</div>
+                                <small style="color:var(--text-secondary);">${date}</small>
+                            </div>
+                            <p style="margin:0.75rem 0; line-height:1.6; font-size:0.95rem;">${escapeHtml(preview)}</p>
+                            <button onclick="deleteEntry(${entry.id})" style="background:#ef4444; padding:0.3rem 0.8rem; font-size:0.8rem; margin:0; border-radius:8px;">Delete</button>
+                        </div>`;
+                }).join('');
+            } catch {
+                console.error('Error loading journal entries');
+            }
+        }
+
+        async function deleteEntry(id) {
+            if (!confirm('Delete this journal entry?')) return;
+            try {
+                const res = await fetch(`${API_URL}/journal/delete/${id}`, { method: 'DELETE', credentials: 'include' });
+                if (res.ok) { loadJournalEntries(); showToast('Entry deleted'); }
+            } catch { showToast('Failed to delete entry', 'error'); }
+        }
+
+        function debounceSearch(val) {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => loadJournalEntries(val.trim()), 400);
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // ==================== MOOD ====================
+
+        async function loadMoodData() {
+            try {
+                const [statsRes, histRes] = await Promise.all([
+                    fetch(`${API_URL}/mood/stats`, { credentials: 'include' }),
+                    fetch(`${API_URL}/mood/history?days=30`, { credentials: 'include' })
+                ]);
+
+                if (statsRes.ok) {
+                    const stats = await statsRes.json();
+                    const container = document.getElementById('moodStats');
+                    if (!stats.total_entries) {
+                        container.innerHTML = '<p style="text-align:center; color:var(--text-secondary); padding:1rem;">No mood data yet. Start journaling!</p>';
+                    } else {
+                        const trendIcon = { improving: '📈', declining: '📉', stable: '➡️', insufficient_data: '📊' };
+                        container.innerHTML = `
+                            <div class="stats-grid">
+                                <div class="stat-card"><div class="stat-number">${stats.total_entries}</div><div class="stat-label">Total Entries</div></div>
+                                <div class="stat-card"><div class="stat-number">${stats.average_polarity}</div><div class="stat-label">Avg Mood Score</div></div>
+                                <div class="stat-card"><div class="stat-number" style="font-size:1.2rem;">${(stats.most_common_mood || 'N/A').replace('_',' ')}</div><div class="stat-label">Most Common Mood</div></div>
+                                <div class="stat-card"><div class="stat-number">${trendIcon[stats.trend] || '📊'}</div><div class="stat-label">${(stats.trend || '').replace('_',' ')}</div></div>
+                            </div>`;
+                    }
+                }
+
+                if (histRes.ok) {
+                    const history = await histRes.json();
+                    const container = document.getElementById('moodTimeline');
+                    if (!history.length) {
+                        container.innerHTML = '<p style="text-align:center; color:var(--text-secondary); padding:1rem;">No history for the past 30 days.</p>';
+                    } else {
+                        container.innerHTML = history.slice(-10).reverse().map(h => `
+                            <div style="display:flex; align-items:center; gap:1rem; padding:0.6rem 0; border-bottom:1px solid rgba(45,93,123,0.08);">
+                                <div class="mood-indicator" style="background:${getMoodColor(h.mood)}; color:white; font-size:0.75rem;">${h.mood.replace('_',' ').toUpperCase()}</div>
+                                <div style="flex:1; height:8px; background:var(--bg-card); border-radius:4px; overflow:hidden;">
+                                    <div style="height:100%; width:${Math.round((h.polarity + 1) / 2 * 100)}%; background:${getMoodColor(h.mood)}; border-radius:4px; transition:width 0.5s ease;"></div>
+                                </div>
+                                <small style="color:var(--text-secondary); min-width:85px; text-align:right;">${h.date}</small>
+                            </div>`).join('');
+                    }
+                }
+            } catch { console.error('Error loading mood data'); }
+        }
+
+        // ==================== GOALS ====================
+
+        function showGoalModal() { document.getElementById('goalModal').classList.add('open'); }
+        function hideGoalModal() { document.getElementById('goalModal').classList.remove('open'); }
+
+        // Close modal on overlay click
+        document.getElementById('goalModal').addEventListener('click', function(e) {
+            if (e.target === this) hideGoalModal();
+        });
+
+        async function createGoal(event) {
+            event.preventDefault();
+            const data = {
+                title: document.getElementById('goalTitle').value.trim(),
+                description: document.getElementById('goalDesc').value.trim(),
+                category: document.getElementById('goalCategory').value,
+                target_value: parseInt(document.getElementById('goalTarget').value),
+                unit: document.getElementById('goalUnit').value.trim(),
+                deadline: document.getElementById('goalDeadline').value || null
+            };
+
+            if (!data.title || !data.target_value || !data.unit) {
+                showToast('Please fill in required fields', 'error'); return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/goals/add`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                if (res.ok) {
+                    hideGoalModal();
+                    event.target.reset();
+                    loadGoals();
+                    showToast('Goal created! 🎯');
+                } else {
+                    showToast(result.error || 'Failed to create goal', 'error');
+                }
+            } catch { showToast('Connection error', 'error'); }
+        }
+
+        async function loadGoals() {
+            try {
+                const res = await fetch(`${API_URL}/goals`, { credentials: 'include' });
+                if (!res.ok) return;
+                const goals = await res.json();
+                const container = document.getElementById('goalsList');
+
+                if (!goals.length) {
+                    container.innerHTML = '<p style="text-align:center; color:var(--text-secondary); padding:2rem;">No goals yet. Create your first wellness goal!</p>';
+                    return;
+                }
+
+                const categoryEmoji = { mindfulness: '🧘', exercise: '🏃', sleep: '🌙', social: '🤝', nutrition: '🥗', creativity: '🎨' };
+
+                container.innerHTML = goals.map(goal => `
+                    <div class="goal-item">
+                        <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:0.75rem; flex-wrap:wrap; gap:0.5rem;">
+                            <h3 style="color:var(--primary); font-family:'Playfair Display',serif; margin:0; font-size:1.1rem;">${escapeHtml(goal.title)}</h3>
+                            <span style="padding:0.2rem 0.7rem; background:var(--accent); color:white; border-radius:20px; font-size:0.8rem;">
+                                ${categoryEmoji[goal.category] || '🎯'} ${goal.category}
+                            </span>
+                        </div>
+                        ${goal.description ? `<p style="color:var(--text-secondary); margin-bottom:0.75rem; font-size:0.9rem;">${escapeHtml(goal.description)}</p>` : ''}
+                        <div class="progress-bar-bg" style="margin-bottom:0.5rem;">
+                            <div class="progress-bar-fill" style="width:${goal.progress}%;"></div>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+                            <small style="color:var(--text-secondary);">${goal.current_value} / ${goal.target_value} ${goal.unit} (${Math.round(goal.progress)}%)</small>
+                            ${goal.deadline ? `<small style="color:var(--text-secondary);">📅 ${goal.deadline}</small>` : ''}
+                        </div>
+                        ${!goal.completed ? `
+                        <div style="display:flex; gap:0.5rem; margin-top:0.75rem; flex-wrap:wrap;">
+                            <button onclick="updateGoalProgress(${goal.id}, ${goal.current_value + 1})" style="padding:0.4rem 0.9rem; font-size:0.85rem; margin:0;">+1</button>
+                            <button onclick="completeGoal(${goal.id})" style="padding:0.4rem 0.9rem; font-size:0.85rem; margin:0; background:var(--success);">✓ Complete</button>
+                            <button onclick="deleteGoal(${goal.id})" style="padding:0.4rem 0.9rem; font-size:0.85rem; margin:0; background:#ef4444;">Delete</button>
+                        </div>` : '<span style="color:var(--success); font-weight:600; font-size:1rem; display:block; margin-top:0.5rem;">✓ Completed!</span>'}
+                    </div>`).join('');
+            } catch { console.error('Error loading goals'); }
+        }
+
+        async function updateGoalProgress(goalId, newValue) {
+            try {
+                const res = await fetch(`${API_URL}/goals/${goalId}/update`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ current_value: newValue })
+                });
+                if (res.ok) loadGoals();
+            } catch { showToast('Failed to update goal', 'error'); }
+        }
+
+        async function completeGoal(goalId) {
+            try {
+                const res = await fetch(`${API_URL}/goals/${goalId}/complete`, { method: 'POST', credentials: 'include' });
+                if (res.ok) { loadGoals(); showToast('🎉 Goal Completed!'); }
+            } catch { showToast('Failed to complete goal', 'error'); }
+        }
+
+        async function deleteGoal(goalId) {
+            if (!confirm('Delete this goal?')) return;
+            try {
+                const res = await fetch(`${API_URL}/goals/${goalId}`, { method: 'DELETE', credentials: 'include' });
+                if (res.ok) { loadGoals(); showToast('Goal deleted'); }
+            } catch { showToast('Failed to delete goal', 'error'); }
+        }
+
+        // ==================== CHAT ====================
+
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            addMessage('user', message);
+            input.value = '';
+
+            const btn = document.getElementById('sendBtn');
+            btn.disabled = true;
+            btn.textContent = '...';
+
+            try {
+                const res = await fetch(`${API_URL}/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ message })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    addMessage('bot', data.response);
+                } else {
+                    addMessage('bot', 'Sorry, I encountered an error. Please try again.');
+                }
+            } catch {
+                addMessage('bot', "I'm having trouble connecting right now. Please check the server.");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Send';
+            }
+        }
+
+        function addMessage(type, content) {
+            const container = document.getElementById('chatMessages');
+            const avatar = type === 'user' ? '👤' : '🤖';
+            const div = document.createElement('div');
+            div.className = `message ${type}`;
+            div.innerHTML = `
+                <div class="message-avatar">${avatar}</div>
+                <div class="message-content">${content.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</div>`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function handleChatKeyPress(e) {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+        }
+
+        // ==================== MUSIC & VIDEOS ====================
+
+        async function loadMusicRecommendations() {
+            try {
+                const res = await fetch(`${API_URL}/recommendations/music`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mood: currentMood })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('musicRecommendations').innerHTML =
+                        data.playlists.map(p => `
+                            <div class="recommendation-card">
+                                <div style="font-size:2.5rem; margin-bottom:0.75rem;">🎵</div>
+                                <h3 style="color:var(--primary); margin-bottom:1rem;">${escapeHtml(p.name)}</h3>
+                                <a href="https://open.spotify.com/playlist/${p.spotify_uri}" target="_blank" rel="noopener"
+                                   style="display:inline-block; padding:0.7rem 1.4rem; background:#1DB954; color:white;
+                                   text-decoration:none; border-radius:50px; font-weight:600; font-size:0.9rem;">
+                                   ▶ Play on Spotify
+                                </a>
+                            </div>`).join('');
+                }
+            } catch { console.error('Error loading music'); }
+        }
+
+        async function loadVideoRecommendations() {
+            try {
+                const res = await fetch(`${API_URL}/recommendations/videos`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mood: currentMood })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('videoRecommendations').innerHTML =
+                        data.search_terms.map(term => `
+                            <div class="recommendation-card">
+                                <div style="font-size:2.5rem; margin-bottom:0.75rem;">🎬</div>
+                                <h3 style="color:var(--primary); margin-bottom:1rem;">${escapeHtml(term)}</h3>
+                                <a href="https://www.youtube.com/results?search_query=${encodeURIComponent(term)}" target="_blank" rel="noopener"
+                                   style="display:inline-block; padding:0.7rem 1.4rem; background:#FF0000; color:white;
+                                   text-decoration:none; border-radius:50px; font-weight:600; font-size:0.9rem;">
+                                   ▶ Search on YouTube
+                                </a>
+                            </div>`).join('');
+                }
+            } catch { console.error('Error loading videos'); }
+        }
+
+        // ==================== UTILS ====================
+
+        function getMoodColor(mood) {
+            const colors = {
+                very_positive: '#10b981', positive: '#84cc16',
+                neutral: '#f59e0b', negative: '#ef4444', very_negative: '#dc2626'
+            };
+            return colors[mood] || '#6b7280';
+        }
+
+        // ==================== INIT ====================
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            const authed = await checkAuth();
+            if (authed) {
+                loadJournalEntries();
+                loadMusicRecommendations();
+            }
+        });
+    </script>
+</body>
+</html>
